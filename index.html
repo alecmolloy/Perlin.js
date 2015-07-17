@@ -3,28 +3,39 @@
 
 <head>
     <meta lang="en" charset="utf-8">
-    <title></title>
+    <title>Perlin Noise</title>
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="title" content="2D Perlin Noise" />
+    <meta name="description" content="A ****ed up 2D Perlin Noise generator" />
+
+    <meta property="og:url" content="http://alecmolloy.com/perlin-noise/" />
+    <meta property="og:image" content="http://alecmolloy.com/perlin-noise/og.jpg" />
+    <meta property="og:type" content="website" />
 
     <style>
+        html,
         body {
             margin: 0;
             height: 100%;
             width: 100%;
-            position: relative;
+            padding: 0;
             color: #626770;
+            /*            background-color: #282c34;*/
         }
+
         #canvas {
-/*            background-color: #282c34;*/
+            /*            background-color: white;*/
         }
     </style>
 </head>
 
 <body>
     <canvas id="canvas" width="640" height="640"></canvas>
-    <script type="text/javascript" src="js/dotProduct.js" ></script>
-    <script type="text/javascript" src="js/Perlin2D.js" ></script>
+    <script type="text/javascript" src="js/dat.gui.min.js"></script>
+    <script type="text/javascript" src="js/Perlin2D.js"></script>
+    <script type="text/javascript" src="js/in-colour.js"></script>
+    <script type="text/javascript" src="js/putImageData.js"></script>
     <script type="text/javascript" src="js/app.js"></script>
 </body>
 

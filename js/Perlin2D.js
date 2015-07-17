@@ -3,101 +3,148 @@
 
 
 var Perlin2D = function (config) {
-    this.width = config.width || canvas.width;
-    this.height = config.height || canvas.height;
     this.cellSize = config.cellSize || 100;
+    this.ctx = config.ctx;
+    this.canvas = config.canvas;
+    this.showLattice = config.showLattice;
+    this.height = this.canvas.height;
+    this.width = this.canvas.width;
 
     this.createLatticeArray();
-    this.drawPixels();
-//    this.drawLatticeVectors();
+    this.drawPerlin();
+    if (this.showLattice)
+        this.drawLatticeVectors();
 };
+
+/*
+ *  Lerp: Linear interpolation function.
+ *  Given a range bound by [a0, a1], and w, which is bound by [0,1].
+ *  Return the value between a0 and a1 that the percentage
+ *  value w is of the range. If a0 = 0, a1 = 10, w = .5.
+ *  The function will return 5. Which is 50% of 10.
+ *  More information here: https://en.wikipedia.org/wiki/Linear_interpolation
+ *
+ *  @param {number} a0 The lower bounding number of the range
+ *  @param {number} a1 The higher bounding number of the range
+ *  @param {number} w The percentage value (as a decimal between 0 and 1, inclusive) to find in the range [a0, a1].
+ */
+
+Perlin2D.lerp = function (a0, a1, w) {
+    return (1 - w) * a0 + w * a1;
+}
+
+Perlin2D.prototype.dotProduct = function (ix, iy, x, y) {
+    x /= this.cellSize;
+    y /= this.cellSize;
+
+    // Precomputed (or otherwise) gradient vectors at each grid point X,Y
+    var gradient = this.lattice.grid;
+
+    // Compute the distance vector
+    var dx = x - ix;
+    var dy = y - iy;
+
+    //    console.log(dx + ', ' + dy);
+
+    // Compute the dot-product
+    return (dx * gradient[iy][ix][0] + dy * gradient[iy][ix][1]);
+}
 
 Perlin2D.prototype.createLatticeArray = function () {
     // Create a 2D array for the lattice
     this.lattice = {
-        x: Math.ceil(this.width / this.cellSize) + 1,
-        y: Math.ceil(this.height / this.cellSize) + 1
+        width: Math.ceil(this.width / this.cellSize) + 1,
+        height: Math.ceil(this.height / this.cellSize) + 1
     };
 
-    this.lattice.grid = new Array(this.lattice.x);
-    for (var i = 0; i < this.lattice.x; i++) {
-        this.lattice.grid[i] = new Array(this.lattice.y);
+    this.lattice.grid = new Array(this.lattice.height);
+    for (var i = 0; i < this.lattice.height; i++) {
+        this.lattice.grid[i] = new Array(this.lattice.width);
     }
 
     // Seed the lattice with random gradient vectors
-    for (var m = 0; m < this.lattice.x; m++) {
-        for (var n = 0; n < this.lattice.y; n++) {
-            this.lattice.grid[m][n] = [Math.random() * 2 - 1, Math.random() * 2 - 1];
+    for (var cellY = 0; cellY < this.lattice.height; cellY++) {
+        for (var cellX = 0; cellX < this.lattice.width; cellX++) {
+            var angle = Math.random() * Math.PI * 2;
+            this.lattice.grid[cellY][cellX] = [Math.cos(angle), Math.sin(angle)];
         }
     }
 }
 
 Perlin2D.prototype.drawLatticeVectors = function () {
-    ctx.fillStyle = '#626770';
-    ctx.strokeStyle = '#626770';
-    for (var m = 0; m < this.lattice.x; m++) {
-        for (var n = 0; n < this.lattice.y; n++) {
-            var vx = this.lattice.grid[m][n][0] * 30;
-            var vy = this.lattice.grid[m][n][1] * 30;
-            var x = m * this.cellSize;
-            var y = n * this.cellSize;
+    this.ctx.strokeStyle = 'rgba(45, 161, 222, 0.53)';
+    this.ctx.fillStyle = 'rgba(45, 161, 222, 0.53)';
+    for (var cellY = 0; cellY < this.lattice.width; cellY++) {
+        for (var cellX = 0; cellX < this.lattice.height; cellX++) {
+            var vx = this.lattice.grid[cellX][cellY][0] * 30;
+            var vy = this.lattice.grid[cellX][cellY][1] * 30;
+            var x = cellX * this.cellSize;
+            var y = cellY * this.cellSize;
 
             // Draw the vector
-            ctx.beginPath()
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + vx, y + vy);
-            ctx.stroke();
-            ctx.closePath();
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, y);
+            this.ctx.lineTo(x + vx, y + vy);
+            this.ctx.stroke();
+            this.ctx.closePath();
 
             // Draw the dot
-            ctx.beginPath()
-            ctx.ellipse(x, y, 4, 4, 0, 0, Math.PI * 2)
-            ctx.fill();
-            ctx.closePath();
+            this.ctx.beginPath();
+            this.ctx.rect(x - 4, y - 4, 8, 8);
+            this.ctx.fillStyle = '#fff';
+            this.ctx.fill();
+            this.ctx.stroke();
+            this.ctx.closePath();
 
             // Draw the arrow dot
-            ctx.beginPath()
-            ctx.ellipse(x + vx, y + vy, 2.5, 2.5, 0, 0, Math.PI * 2)
-            ctx.fill();
-            ctx.closePath();
+            this.ctx.beginPath();
+            this.ctx.fillStyle = 'rgba(45, 161, 222, 0.53)';
+            this.ctx.ellipse(x + vx, y + vy, 2.5, 2.5, 0, 0, Math.PI * 2)
+            this.ctx.fill();
+            this.ctx.closePath();
         }
     }
 }
 
-Perlin2D.prototype.drawPixels = function () {
-    var image = new ImageData(canvas.width, canvas.height);
+Perlin2D.prototype.calculatePixel = function (x, y) {
+    // Calculate the displacement of the corners of the lattice cell relative to the current pixel
+    var x0 = Math.floor(x / this.cellSize);
+    var x1 = x0 + 1;
+    var y0 = Math.floor(y / this.cellSize);
+    var y1 = y0 + 1;
+
+    // Interploation weight
+    var sx = (x / this.cellSize) - x0;
+    var sy = (y / this.cellSize) - y0;
+
+    // Calculate the gradient values at the sample point by taking the dot product of the displacement vectors and their respective gradient vectors
+    var n00 = this.dotProduct(x0, y0, x, y);
+    var n10 = this.dotProduct(x1, y0, x, y);
+    var n01 = this.dotProduct(x0, y1, x, y);
+    var n11 = this.dotProduct(x1, y1, x, y);
+
+    // Interpolate the four gradient values at the current pixel
+    var ix0 = Perlin2D.lerp(n00, n10, sx);
+    var ix1 = Perlin2D.lerp(n01, n11, sx);
+
+    var value = Perlin2D.lerp(ix0, ix1, sy)
+
+    return value;
+}
+Perlin2D.prototype.drawPerlin = function () {
+    console.log(this.width + ', ' + this.height)
+    var image = new ImageData(this.width, this.height);
 
     // Cycle through all pixels
-    for (var x = 0; x < canvas.width; x++) {
-        for (var y = 0; y < canvas.width; y++) {
-            var cellM = Math.floor(x / this.cellSize);
-            var cellN = Math.floor(y / this.cellSize);
-
-            var c00 = this.lattice.grid[cellM][cellN];
-            var c01 = this.lattice.grid[cellM + 1][cellN];
-            var c10 = this.lattice.grid[cellM][cellN + 1];
-            var c11 = this.lattice.grid[cellM + 1][cellN + 1];
-
-
-            // Calculate the displacement of the corners of the lattice cell relative to the current pixel
-            var dv00 = [x - c00[0], y - c00[1]];
-            var dv01 = [x - c01[0], y - c01[1]];
-            var dv10 = [x - c10[0], y - c10[1]];
-            var dv11 = [x - c11[0], y - c11[1]];
-
-            // Calculate the gradient values at the sample point by taking the dot product of the displacement vectors and their respective gradient vectors
-            var dp00 = Math.dotProduct(dv00, c00);
-            var dp01 = Math.dotProduct(dv01, c01);
-            var dp10 = Math.dotProduct(dv10, c10);
-            var dp11 = Math.dotProduct(dv11, c11);
-
-            // Interpolate the four gradient values at the current pixel
-            image.data[((x * 4) + (canvas.width * y))] = Math.floor(Math.abs(dp00));
-            image.data[((x * 4) + (canvas.width * y)) + 1] = Math.floor(Math.abs(dp10));
-            image.data[((x * 4) + (canvas.width * y)) + 2] = Math.floor(Math.abs(dp01));
-            image.data[((x * 4) + (canvas.width * y)) + 3] = Math.floor(Math.abs(dp11));
+    for (var y = 0; y < this.height; y++) {
+        for (var x = 0; x < this.width; x++) {
+            var colour = Math.cos(50 * this.calculatePixel(x, y));
+            colour *= 255;
+            image.data[(x * 4) + (y * 4 * this.width) + 0] = colour;
+            image.data[(x * 4) + (y * 4 * this.width) + 1] = colour;
+            image.data[(x * 4) + (y * 4 * this.width) + 2] = colour;
+            image.data[(x * 4) + (y * 4 * this.width) + 3] = colour;
         }
     }
-    console.log(image);
-    ctx.putImageData(image, 0, 0);
+    this.ctx.putImageData(image, 0, 0);
 }
