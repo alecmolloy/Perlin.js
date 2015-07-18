@@ -5,6 +5,8 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 canvas.width = canvas.width * dpr;
 canvas.height = canvas.height * dpr;
+//canvas.width = 100;
+//canvas.height = 100;
 canvas.style.width = (canvas.width / dpr) + 'px';
 canvas.style.height = (canvas.height / dpr) + 'px';
 
@@ -13,10 +15,10 @@ var ctx = canvas.getContext('2d');
 //drawMultiRadiantCircle(canvas.width / 2, canvas.height / 2, canvas.width/2, colours);
 
 var perlin = new Perlin2D({
-    cellSize: 100,
+    cellSize: window.innerWidth / 4,
     canvas: canvas,
     ctx: ctx,
-    showLattice: false
+    showLattice: true
 });
 
 function setupStats() {
