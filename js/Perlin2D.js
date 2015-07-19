@@ -3,6 +3,7 @@
 
 var Perlin2D = function (config) {
     this.cellSize = config.cellSize || 100;
+    this.colour = config.colour || false;
     this.ctx = config.ctx;
     this.canvas = config.canvas;
     this.showLattice = config.showLattice;
@@ -106,14 +107,20 @@ Perlin2D.prototype.drawPerlin = function () {
     for (var y = 0; y < this.height; y++) {
         for (var x = 0; x < this.width; x++) {
             var colour = this.calculatePoint(x, y) * 255;
-            image.data[(x * 4) + (y * 4 * this.width) + 0] = colour;
-            image.data[(x * 4) + (y * 4 * this.width) + 1] = colour;
-            image.data[(x * 4) + (y * 4 * this.width) + 2] = colour;
-            image.data[(x * 4) + (y * 4 * this.width) + 3] = 255;
+            if (this.colour) {
+                image.data[(x * 4) + (y * 4 * this.width) + 0] = 255 - (colour * (1 - x / canvas.width));
+                image.data[(x * 4) + (y * 4 * this.width) + 1] = 255 - (colour * y / canvas.height);
+                image.data[(x * 4) + (y * 4 * this.width) + 2] = 255 - (colour * 2 * x / canvas.width);
+                image.data[(x * 4) + (y * 4 * this.width) + 3] = 255;
+            } else {
+                image.data[(x * 4) + (y * 4 * this.width) + 0] = colour;
+                image.data[(x * 4) + (y * 4 * this.width) + 1] = colour;
+                image.data[(x * 4) + (y * 4 * this.width) + 2] = colour;
+                image.data[(x * 4) + (y * 4 * this.width) + 3] = 255;
+            }
         }
     }
     this.ctx.putImageData(image, 0, 0);
-    console.log(min, max);
 }
 
 Perlin2D.prototype.drawLatticeVectors = function () {
